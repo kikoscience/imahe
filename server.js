@@ -265,28 +265,37 @@ app.delete('/api/folders/:folder', async (req, res) => {
   const folder = path.basename(req.params.folder);
   const folderPath = path.join(uploadsDir, folder);
 
+  let deletedFromDisk = false;
   if (fs.existsSync(folderPath)) {
     try {
       fs.rmSync(folderPath, { recursive: true, force: true });
-      if (dbPool) {
-        try {
-          await dbPool.request()
-            .input('EmployeeName', sql.NVarChar, folder)
-            .query('DELETE FROM EmployeeImages WHERE EmployeeName = @EmployeeName');
-          await dbPool.request()
-            .input('EmployeeName', sql.NVarChar, folder)
-            .query('DELETE FROM EmployeeProfiles WHERE EmployeeName = @EmployeeName');
-        } catch (err) {
-          console.error('Error deleting profile from DB', err);
-        }
-      }
-      res.json({ message: 'Folder deleted successfully' });
+      deletedFromDisk = true;
     } catch (err) {
-      res.status(500).json({ error: 'Error deleting folder' });
+      console.error(err);
+      return res.status(500).json({ error: 'Error deleting folder from disk' });
     }
-  } else {
-    res.status(404).json({ error: 'Folder not found' });
   }
+
+  let deletedFromDb = false;
+  if (dbPool) {
+    try {
+      await dbPool.request()
+        .input('EmployeeName', sql.NVarChar, folder)
+        .query('DELETE FROM EmployeeImages WHERE EmployeeName = @EmployeeName');
+      await dbPool.request()
+        .input('EmployeeName', sql.NVarChar, folder)
+        .query('DELETE FROM EmployeeProfiles WHERE EmployeeName = @EmployeeName');
+      deletedFromDb = true;
+    } catch (err) {
+      console.error('Error deleting profile from DB', err);
+    }
+  }
+
+  if (!deletedFromDisk && !deletedFromDb && !dbPool) {
+    return res.status(404).json({ error: 'Folder not found' });
+  }
+
+  res.json({ message: 'Folder deleted successfully' });
 });
 
 app.listen(PORT, () => {
