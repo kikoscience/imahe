@@ -59,7 +59,14 @@ if (process.env.DB_HOST) {
             EmployeeName NVARCHAR(255) PRIMARY KEY,
             JobTitle NVARCHAR(255),
             Email NVARCHAR(255)
-        )
+        );
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='EmployeeImages' and xtype='U')
+        CREATE TABLE EmployeeImages (
+            Id INT IDENTITY(1,1) PRIMARY KEY,
+            EmployeeName NVARCHAR(255),
+            FileName NVARCHAR(500),
+            FilePath NVARCHAR(1000)
+        );
       `);
     } catch (err) {
       console.error('Database connection or creation failed. Falling back to local file system profiles.', err);
@@ -184,6 +191,20 @@ app.post('/api/upload', upload.array('images', 20), async (req, res) => {
     downloadUrl: `/api/download/${encodeURIComponent(employeeName)}/${encodeURIComponent(file.filename)}`
   }));
 
+  if (dbPool && filesInfo.length > 0) {
+    try {
+      for (const file of filesInfo) {
+        await dbPool.request()
+          .input('EmployeeName', sql.NVarChar, employeeName)
+          .input('FileName', sql.NVarChar, file.name)
+          .input('FilePath', sql.NVarChar, file.url)
+          .query('INSERT INTO EmployeeImages (EmployeeName, FileName, FilePath) VALUES (@EmployeeName, @FileName, @FilePath)');
+      }
+    } catch (err) {
+      console.error('Error saving images to DB', err);
+    }
+  }
+
   res.json({
     message: 'Files uploaded successfully',
     files: filesInfo
@@ -204,7 +225,7 @@ app.get('/api/download/:folder/:filename', (req, res) => {
   });
 });
 
-app.delete('/api/images/:folder/:filename', (req, res) => {
+app.delete('/api/images/:folder/:filename', async (req, res) => {
   const folder = path.basename(req.params.folder);
   const filename = path.basename(req.params.filename);
   const folderPath = path.join(uploadsDir, folder);
@@ -218,6 +239,17 @@ app.delete('/api/images/:folder/:filename', (req, res) => {
       const remainingFiles = fs.readdirSync(folderPath);
       if (remainingFiles.length === 0 || (remainingFiles.length === 1 && remainingFiles[0] === 'profile.json')) {
         fs.rmSync(folderPath, { recursive: true, force: true });
+      }
+
+      if (dbPool) {
+        try {
+          await dbPool.request()
+            .input('EmployeeName', sql.NVarChar, folder)
+            .input('FileName', sql.NVarChar, filename)
+            .query('DELETE FROM EmployeeImages WHERE EmployeeName = @EmployeeName AND FileName = @FileName');
+        } catch (err) {
+          console.error('Error deleting image from DB', err);
+        }
       }
 
       res.json({ message: 'File deleted successfully' });
@@ -238,6 +270,9 @@ app.delete('/api/folders/:folder', async (req, res) => {
       fs.rmSync(folderPath, { recursive: true, force: true });
       if (dbPool) {
         try {
+          await dbPool.request()
+            .input('EmployeeName', sql.NVarChar, folder)
+            .query('DELETE FROM EmployeeImages WHERE EmployeeName = @EmployeeName');
           await dbPool.request()
             .input('EmployeeName', sql.NVarChar, folder)
             .query('DELETE FROM EmployeeProfiles WHERE EmployeeName = @EmployeeName');
