@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3005:3000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./public:/app/public
+    environment:
+      - NODE_ENV=development

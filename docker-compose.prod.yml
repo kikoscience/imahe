@@ -1,0 +1,24 @@
+services:
+  app:
+    build: .
+    image: imahe-app:prod
+    restart: unless-stopped
+    ports:
+      - "80:3000"
+    environment:
+      - NODE_ENV=production
+      # Connecting to external database/storage IP as requested
+      - DB_HOST=192.168.1.3
+    volumes:
+      # If 192.168.1.3 is a network share for images, you can uncomment the NFS mount below:
+      # - external_uploads:/app/uploads
+      - ./uploads:/app/uploads
+      - ./public:/app/public
+
+# volumes:
+#   external_uploads:
+#     driver: local
+#     driver_opts:
+#       type: nfs
+#       o: addr=192.168.1.3,rw
+#       device: ":/path/to/shared/folder"

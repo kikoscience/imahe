@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Imahe - Corporate Image Repository">
+  <title>Imahe - Corporate Image Repository</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="glass-header">
+      <div class="logo">
+        <i class="fa-solid fa-layer-group"></i> Imahe
+      </div>
+      <div class="header-actions" style="display: flex; gap: 1rem; align-items: center;">
+        <button id="themeToggleBtn" class="btn btn-icon" title="Toggle Theme" style="background: transparent; border: none; font-size: 1.25rem; color: var(--text-primary); cursor: pointer;">
+          <i class="fa-solid fa-sun" id="themeIcon"></i>
+        </button>
+        <button id="uploadBtn" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Upload</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="hero">
+        <h1>Company Assets at Your Fingertips</h1>
+        <p>Browse, search, and download high-quality assets from the company repository.</p>
+        <div class="search-bar">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" id="searchInput" placeholder="Search images...">
+        </div>
+      </div>
+
+      <div class="breadcrumbs" id="breadcrumbs">
+        <span class="crumb active" data-path="home">Home</span>
+      </div>
+
+      <div class="gallery-container" id="gallery">
+        <div class="loading-spinner"></div>
+      </div>
+    </main>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal hidden">
+      <div class="modal-content glass-panel">
+        <div class="modal-header">
+          <h2>Upload Image</h2>
+          <button class="close-btn"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <form id="uploadForm">
+          <div class="form-group">
+            <label for="employeeName">Employee Name</label>
+            <input type="text" id="employeeName" name="employeeName" placeholder="e.g. Jane Doe" required>
+          </div>
+          <div class="form-group">
+            <label for="jobTitle">Job Title <span style="font-weight: normal; color: var(--text-secondary);">(Optional)</span></label>
+            <input type="text" id="jobTitle" name="jobTitle" placeholder="e.g. Senior Engineer">
+          </div>
+          <div class="form-group">
+            <label for="email">Email <span style="font-weight: normal; color: var(--text-secondary);">(Optional)</span></label>
+            <input type="email" id="email" name="email" placeholder="e.g. jane@company.com">
+          </div>
+
+          <div class="drop-zone" id="dropZone">
+            <i class="fa-solid fa-cloud-arrow-up icon-large"></i>
+            <p>Drag & drop images here or <span class="text-accent">click to browse</span></p>
+            <input type="file" id="fileInput" name="images" accept="image/*" multiple required hidden>
+          </div>
+          <div class="file-preview hidden" id="filePreview">
+             <div class="file-info">
+               <span id="fileName">0 files selected</span>
+               <button type="button" id="removeFile"><i class="fa-solid fa-times"></i></button>
+             </div>
+             <div class="preview-grid" id="previewGrid"></div>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary w-full" id="submitUpload" disabled>Upload Now</button>
+          </div>
+        </form>
+      </div>
+    </div> <!-- Close uploadModal -->
+
+    <!-- Image Viewer Modal -->
+    <div id="viewerModal" class="modal hidden">
+      <div class="viewer-content">
+        <button class="viewer-close-btn" id="closeViewerBtn"><i class="fa-solid fa-times"></i></button>
+        <img id="viewerImage" src="" alt="Full View">
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
