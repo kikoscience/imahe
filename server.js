@@ -32,21 +32,39 @@ const dbConfig = {
 
 let dbPool = null;
 if (process.env.DB_HOST) {
-  sql.connect(dbConfig).then(pool => {
-    dbPool = pool;
-    console.log('Connected to SQL Server at ' + process.env.DB_HOST);
-    // Ensure table exists
-    return pool.request().query(`
-      IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='EmployeeProfiles' and xtype='U')
-      CREATE TABLE EmployeeProfiles (
-          EmployeeName NVARCHAR(255) PRIMARY KEY,
-          JobTitle NVARCHAR(255),
-          Email NVARCHAR(255)
-      )
-    `);
-  }).catch(err => {
-    console.error('Database connection failed. Falling back to local file system profiles.', err);
-  });
+  (async () => {
+    try {
+      const masterConfig = { ...dbConfig, database: 'master' };
+      const targetDbName = dbConfig.database;
+      
+      let masterPool = await sql.connect(masterConfig);
+      console.log('Connected to SQL Server master database at ' + process.env.DB_HOST);
+      
+      const dbCheckResult = await masterPool.request().query(`
+        SELECT database_id FROM sys.databases WHERE Name = '${targetDbName}'
+      `);
+      
+      if (dbCheckResult.recordset.length === 0) {
+        console.log(`Database '${targetDbName}' does not exist. Creating...`);
+        await masterPool.request().query(`CREATE DATABASE [${targetDbName}]`);
+      }
+      await masterPool.close();
+
+      dbPool = await sql.connect(dbConfig);
+      console.log(`Connected to target database '${targetDbName}'`);
+
+      await dbPool.request().query(`
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='EmployeeProfiles' and xtype='U')
+        CREATE TABLE EmployeeProfiles (
+            EmployeeName NVARCHAR(255) PRIMARY KEY,
+            JobTitle NVARCHAR(255),
+            Email NVARCHAR(255)
+        )
+      `);
+    } catch (err) {
+      console.error('Database connection or creation failed. Falling back to local file system profiles.', err);
+    }
+  })();
 }
 
 const storage = multer.diskStorage({
